@@ -1,5 +1,9 @@
 # FoldChrono ⏳
 
+![Tests](https://github.com/18971181532/foldchrono/actions/workflows/test.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 > **Local-first directory time capsule** — snapshot, diff, and restore *any* folder, no git required.
 
 FoldChrono gives your ordinary directories the same "time travel" superpower that version control gives code repos. Point it at a folder, take a snapshot, and later you can see exactly what changed, or bring back a file you deleted by accident — even if you never committed anything to git.
@@ -91,6 +95,7 @@ foldchrono restore 1 --to ./recovery_dir
 | `foldchrono show <ID>` | Show metadata + full file list of a snapshot. |
 | `foldchrono diff [PATH] [--from ID] [--to ID]` | Diff. With no flags: latest snapshot vs working tree. `--from` only: that snapshot vs working tree. Both: snapshot vs snapshot. |
 | `foldchrono status [PATH]` | Shortcut for `diff` against the latest snapshot. |
+| `foldchrono log <FILE> [PATH]` | Show change history of a single file across all snapshots (added / modified / unchanged). |
 | `foldchrono restore <ID> [--to DIR] [--file GLOB] [-v]` | Restore files. `--to` defaults to `./foldchrono_restore_<ID>_<timestamp>`. `--file` filters by glob. |
 | `foldchrono watch [PATH] [-i SECONDS]` | Poll every N seconds (default 30) and auto-snapshot on change. |
 | `foldchrono rm <ID>` | Delete a snapshot's metadata (run `gc` to free blobs). |

@@ -245,6 +245,42 @@ def cmd_status(args: argparse.Namespace, storage: Storage) -> int:
     return 0
 
 
+def cmd_log(args: argparse.Namespace, storage: Storage) -> int:
+    """Show per-file history across all snapshots of a directory."""
+    path = _resolve_path(args.path)
+    file_rel = Path(args.file).as_posix()
+    with storage._conn() as c:
+        rows = c.execute(
+            """
+            SELECT s.id, s.created_at, s.comment, f.size, f.sha256
+            FROM files f
+            JOIN snapshots s ON f.snapshot_id = s.id
+            WHERE s.path = ? AND f.rel_path = ?
+            ORDER BY s.id ASC
+            """,
+            (str(path), file_rel),
+        ).fetchall()
+    if not rows:
+        print(f"No history for '{file_rel}' under {path}")
+        return 1
+    print(f"History of {file_rel}:")
+    print(f"  {'SNAPSHOT':<9} {'DATE':<19} {'SIZE':>9}  CHANGE")
+    print(f"  {'-'*9} {'-'*19} {'-'*9}  {'-'*8}")
+    prev_sha = None
+    for sid, created, comment, size, sha in rows:
+        if prev_sha is None:
+            change = "added"
+        elif prev_sha != sha:
+            change = "modified"
+        else:
+            change = "unchanged"
+        print(f"  #{sid:<8} {_fmt_time(created):<19} {_fmt_size(size):>9}  {change}")
+        if comment:
+            print(f"  {'':<9} {'':<19} {'':>9}  ↳ {comment}")
+        prev_sha = sha
+    return 0
+
+
 # --------------------------------------------------------------------- parser
 
 
@@ -316,6 +352,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("status", help="Show changes since the latest snapshot")
     p.add_argument("path", nargs="?", help="Directory (default: cwd)")
     p.set_defaults(func=cmd_status)
+
+    # log
+    p = sub.add_parser("log", help="Show change history of a single file across snapshots")
+    p.add_argument("file", help="Relative path of the file to inspect")
+    p.add_argument("path", nargs="?", help="Directory that was snapshotted (default: cwd)")
+    p.set_defaults(func=cmd_log)
 
     return parser
 

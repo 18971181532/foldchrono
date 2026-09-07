@@ -95,6 +95,34 @@ class TestCLI(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertIn("removed 1 blob", out)
 
+    def test_log_file_history(self):
+        with TempProject() as proj:
+            data_dir = str(proj.root / ".fcdata")
+            proj.write("a.txt", "v1")
+            run_cli("--data-dir", data_dir, "snapshot", str(proj.root), "-m", "first")
+            proj.write("a.txt", "v2")
+            run_cli("--data-dir", data_dir, "snapshot", str(proj.root), "-m", "second")
+            # unchanged in third snapshot
+            run_cli("--data-dir", data_dir, "snapshot", str(proj.root))
+
+            code, out, _ = run_cli("--data-dir", data_dir, "log", "a.txt", str(proj.root))
+            self.assertEqual(code, 0)
+            self.assertIn("History of a.txt", out)
+            self.assertIn("added", out)
+            self.assertIn("modified", out)
+            self.assertIn("unchanged", out)
+            self.assertIn("first", out)
+            self.assertIn("second", out)
+
+    def test_log_nonexistent_file(self):
+        with TempProject() as proj:
+            data_dir = str(proj.root / ".fcdata")
+            proj.write("a.txt", "v1")
+            run_cli("--data-dir", data_dir, "snapshot", str(proj.root))
+            code, out, _ = run_cli("--data-dir", data_dir, "log", "missing.txt", str(proj.root))
+            self.assertEqual(code, 1)
+            self.assertIn("No history", out)
+
 
 if __name__ == "__main__":
     unittest.main()
